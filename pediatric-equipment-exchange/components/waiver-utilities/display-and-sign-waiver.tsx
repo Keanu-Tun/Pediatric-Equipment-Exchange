@@ -63,7 +63,7 @@ export default function DisplayAndSignWaiver({ template_id, displayed_waiver_url
 
     try {
       if(!guardianSignature.current || guardianSignature.current.isEmpty?.()) { 
-        throw new Error("Missing guardian signauture");
+        throw new Error("Missing guardian signature");
       }
       
       else if (!staffSignature.current || staffSignature.current.isEmpty?.()) {

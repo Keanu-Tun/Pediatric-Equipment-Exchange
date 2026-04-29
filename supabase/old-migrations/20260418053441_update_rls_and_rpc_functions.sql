@@ -319,7 +319,7 @@ BEGIN
     SET status = 'Allocated'
     WHERE id = p_equipment_id;
     
-   -- Mark allocated_at, allocated_by, conditoin_at_allocation
+   -- Mark allocated_at, allocated_by, condition_at_allocation
     UPDATE distributions
     SET allocated_at = now(), allocated_by = p_user_id, condition_at_allocation = (
         SELECT condition 

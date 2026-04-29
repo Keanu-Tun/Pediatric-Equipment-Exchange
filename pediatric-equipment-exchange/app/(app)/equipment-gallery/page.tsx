@@ -20,7 +20,7 @@ export default async function EquipmentGallery() {
 
     return (
         <div className = "flex flex-col bg-[#FFC94A]">
-            {/* Passes the itmes to the gallery-logic component */}
+            {/* Passes the items to the gallery-logic component */}
             <main className = "flex flex-1 bg-[#FFC94A] p-6">
                 <GalleryGrid items ={items}/>
             </main>
