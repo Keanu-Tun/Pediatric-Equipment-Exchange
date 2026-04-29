@@ -2,15 +2,13 @@
 // aka the row in the distribution table where == equipment_id & returned_at = null 
 
 // updated to also grab the recipient info instead of a creating a new route for GET recipient
+// also allocated by and reserved by statff names for the distribution details popup
 
-import {createClient} from "@supabase/supabase-js";
-
-const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! //server only
-);
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(req: Request, details: { params: any }) {
+
+    const supabase = await createClient();
 
     const { id } = await details.params; // unwrap the Promise
 
@@ -18,12 +16,10 @@ export async function GET(req: Request, details: { params: any }) {
 
     const { data, error } = await supabase
         .from("distributions")
-        .select("*, recipient:recipient_id(*)") //can get the recipient cause recipient_id is a foreign key
+        .select("*, recipient:recipient_id(*), reserved_staff:reserved_by(full_name), allocated_staff:allocated_by(full_name)") 
         .eq("equipment_id", equipment_id)
         .is("returned_at", null)
         .maybeSingle(); // if there's no distribution, it'll just return null. Otherwise returns the single active one
-
-    console.log("rows:", data, "error:", error);
         
     if (error) {
         return new Response(JSON.stringify({error: error.message}), {status:500});

@@ -3,19 +3,18 @@ export interface ItemFields {
     id: string
     name: string
     category: string
-    subcategory?: string
+    subcategory: string | null
     condition: string
     status: string
-    description?: string
+    description: string | null
     size: string
-    color: string
-    donor: string
+    color: string | null
+    donor: string | null
     image_urls: string[]
     barcode_value?: string | null
-    qr_code_url: string
     created_at: string
-    location: string
-    barcode_number: number
+    location?: string
+    barcode_number?: number
 }
 
 export interface DistributionFields {
@@ -23,24 +22,52 @@ export interface DistributionFields {
     equipment_id: string,
     recipient_id: string,
     reserved_by: string,
-    allocated_by: string,
-    returned_by: string,
+    allocated_by: string | null,
+    returned_by: string | null,
     reserved_at: string, 
-    allocated_at?: string,
-    returned_at?: string,
-    waiver_signed: boolean,
-    waiver_url?: string,
-    signed_at?: string,
-    condition_at_allocation?: string,
-    notes?: string,
+    allocated_at: string | null,
+    returned_at: string | null,
+    condition_at_allocation: string | null,
+    notes: string | null,
+    cancellation_reason: string | null,
+    cancelled_at: string | null,
+    cancelled_by: string | null,
+    signed_at: string | null,
+    signed_by: string | null,
+    signed_waiver_url: string | null,
+    waiver_template_id: string | null
+    
 }
 
 export interface RecipientFields {
     id: string,
     name: string,
     contact_name: string,
-    organization?: string,
     email: string,
     phone: string,
-    created_at: string
+    created_at: string,
+    authorized_for_pickup: string,
+    clinic_id: string
+}
+
+export interface ClinicFields {
+    id: string,
+    name: string,
+    created_at: string,
+}
+
+export interface ProfileFields {
+    id: string,
+    full_name: string,
+    created_at: string,
+    username: string,
+    role: string,
+    email: string
+}
+
+// distribution fetch with recipient info for the "Distribution Details Popup"
+export interface DistributionWithRecipientAndStaff extends DistributionFields {
+  recipient: RecipientFields
+  reserved_staff: ProfileFields
+  allocated_staff: ProfileFields
 }

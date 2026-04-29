@@ -1,42 +1,61 @@
-import {createClient} from "@supabase/supabase-js";
-
-const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! //server only
-);
+import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin"; 
+import { getUserAndRole } from "@/lib/data-access-layer";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
+  
+  const supabase = await createClient();
+  
   try {
-    const { username, password, fullName, role } = await req.json();
 
-    // Validate input
-    if (!username || !password || !fullName) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
+    const { user, role: currentRole } = await getUserAndRole();
+
+    if (!user) { 
+      return NextResponse.json({ error: "Unauthorized"},
+        {status: 401 });
+    }
+
+    if (currentRole !== "admin") {
+      return NextResponse.json({ error: "Forbidden: Admins only" },
+        { status: 403 }
+      );
+    }
+
+    // 📦 3. GET REQUEST DATA
+    const { email, username, password, fullName, role } = await req.json();
+
+    // ✅ 4. VALIDATE INPUT
+    if (!email || !password || !fullName) {
+      return NextResponse.json({ error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const cleanUsername = username.toLowerCase().trim();
-    const email = `${cleanUsername}@paec.com`;
+    const allowedRoles = ["admin", "physical_therapist", "volunteer"];
+    if (!allowedRoles.includes(role)) {
+      return NextResponse.json({ error: "Invalid role" },
+        { status: 400 }
+      );
+    }
 
-    // Create auth user
+    const cleanUsername = username?.toLowerCase().trim();
+
+    // 👤 5. CREATE AUTH USER
     const { data: authData, error: authError } =
-      await supabase.auth.admin.createUser({
-        email,
+      await supabaseAdmin.auth.admin.createUser({
+        email: email.trim(),
         password,
+        email_confirm: true,
         user_metadata: {
           username: cleanUsername,
-          role: role || "volunteer",
+          role,
           fullName,
         },
       });
 
-    console.log("Auth createUser response:", authData, authError);
-
     if (authError) {
-      return new Response(
-        JSON.stringify({ error: authError.message || "Auth error" }),
+      return NextResponse.json({ error: authError.message },
         { status: 400 }
       );
     }
@@ -44,43 +63,34 @@ export async function POST(req: Request) {
     const userId = authData.user?.id;
 
     if (!userId) {
-      return new Response(
-        JSON.stringify({ error: "User ID not returned from Supabase" }),
+      return NextResponse.json({ error: "User ID not returned" },
         { status: 500 }
       );
     }
 
-    // Insert into profiles table
-    const { data: profileData, error: profileError } =
-      await supabase
-        .from("profiles")
-        .insert({
-          id: userId,
-          full_name: fullName,
-          role: role || "volunteer",
-          username: cleanUsername, // make sure this column exists
-        })
-        .select();
+    // 🧾 6. INSERT INTO PROFILES TABLE
+    const { error: profileInsertError } =
+      await supabase.from("profiles").insert({
+        id: userId,
+        full_name: fullName,
+        role,
+        username: cleanUsername,
+        email: email.trim(),
+      });
 
-    console.log("Profiles insert response:", profileData, profileError);
-
-    if (profileError) {
-      return new Response(
-        JSON.stringify({
-          error: profileError.message || "Database error creating profile",
-        }),
+    if (profileInsertError) {
+      return NextResponse.json({ error: profileInsertError.message },
         { status: 400 }
       );
     }
 
-    return new Response(
-      JSON.stringify({ authData, profileData }),
+    // ✅ SUCCESS
+    return NextResponse.json({ success: true, userId },
       { status: 200 }
     );
+
   } catch (err: any) {
-    console.error("Unexpected error:", err);
-    return new Response(
-      JSON.stringify({ error: err.message || "Unknown error" }),
+    return NextResponse.json({ error: err.message || "Unknown error" },
       { status: 500 }
     );
   }
